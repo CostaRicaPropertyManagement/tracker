@@ -1,512 +1,776 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Venturebnb • StayFi Executive Tracker</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
+<title>Contractor Assignment Console — Executive</title>
 <style>
   :root{
-    --brand:#0d3b66; --bg:#f7f9fc; --fg:#0f172a; --muted:#64748b; --card:#fff; --border:#e2e8f0;
-    --good:#16a34a; --bad:#dc2626; --warn:#d97706; --pill:#f1f5f9; --accent:#4338ca;
-  }
-  [data-theme="dark"]{
-    --brand:#4f46e5; --bg:#0b1020; --fg:#e5e7eb; --muted:#a3a3b2; --card:#111736; --border:#27306a;
-    --good:#22c55e; --bad:#f87171; --warn:#f59e0b; --pill:#0e1229; --accent:#7c3aed;
+    --bg:#f6f8fb; --card:#ffffff; --ink:#0b1220; --muted:#6b7280; --line:#e6e9f2;
+    --brand:#2f66ff; --brand-weak:#e9f0ff; --ok:#16a34a; --warn:#f59e0b; --err:#ef4444;
+    --chip:#f1f3f9; --shadow:0 10px 30px rgba(25,35,60,.08);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  header{background:var(--brand);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
-  header h1{margin:0;font-size:18px;display:flex;gap:10px;align-items:center}
-  .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  button,select,input{border:1px solid var(--border);background:var(--pill);color:var(--fg);padding:8px 10px;border-radius:10px;font-size:14px}
-  .btn{cursor:pointer}
-  .btn-primary{background:linear-gradient(180deg,var(--accent),#2a2296);color:#fff;border:0}
-  .btn-ghost{background:transparent;border-color:rgba(255,255,255,.35);color:#fff}
-  .wrap{max-width:1280px;margin:0 auto;padding:16px}
-  .surface{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.08)}
-  .banner{display:none;position:sticky;top:0;z-index:5;background:#fee2e2;color:#7f1d1d;border-bottom:1px solid #fca5a5;padding:10px 14px}
-  .kpis{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:14px}
-  .kpi{grid-column:span 3;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
-  .kpi h3{margin:0 0 4px 0;color:var(--muted);font-size:12px;font-weight:700}
-  .kpi .val{font-size:26px;font-weight:800;display:flex;align-items:center;gap:8px}
-  .kpi .delta{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--pill);border:1px solid var(--border)}
-  .kpi.good .val{color:var(--good)} .kpi.bad .val{color:var(--bad)}
-  .controls{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto auto;gap:10px;padding:12px;border-top:1px solid var(--border)}
-  .tabs{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
-  .tab{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--pill);cursor:pointer}
-  .tab.active{background:var(--accent);color:#fff;border-color:transparent}
-  .table-wrap{overflow:auto;border-top:1px solid var(--border)}
-  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1100px}
-  thead th{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:10px;text-align:left;cursor:pointer}
-  tbody td{padding:10px;border-bottom:1px solid var(--border)}
-  tbody tr:nth-child(odd){background:#fafbff}
-  [data-theme="dark"] tbody tr:nth-child(odd){background:#0f1430}
-  .status{display:inline-flex;gap:8px;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
-  .status.connected{background:rgba(22,163,74,.12);color:var(--good)}
-  .status.disconnected{background:rgba(220,38,38,.12);color:var(--bad)}
-  .pill{padding:.15rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border)}
-  .actions-col a{text-decoration:none}
-  .sticky-footer{display:flex;justify-content:space-between;align-items:center;padding:12px;border-top:1px solid var(--border);color:var(--muted)}
-  .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:12px;border-top:1px solid var(--border)}
-  .mini{grid-column:span 3;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px}
-  .bar{height:8px;background:var(--pill);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--good),#10b981)}
-  #map{height:420px;border-top:1px solid var(--border)}
-  #heat{height:300px;padding:12px}
-  canvas{max-width:100%}
-  .hidden{display:none!important}
-  @media(max-width:900px){.kpi{grid-column:span 6}.controls{grid-template-columns:1fr 1fr 1fr 1fr auto auto auto}.mini{grid-column:span 6}}
-  @media(max-width:640px){.kpi{grid-column:span 12}.controls{grid-template-columns:1fr 1fr}.mini{grid-column:span 12}}
+  body{margin:0; font-family:Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial; background:linear-gradient(180deg,#f9fbff,#f2f5fb); color:var(--ink);}
+  header{position:sticky; top:0; z-index:10; background:rgba(255,255,255,.85); backdrop-filter:saturate(150%) blur(6px); border-bottom:1px solid var(--line);}
+  .nav{max-width:1280px; margin:0 auto; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+  .badge{font-size:12px; background:var(--brand-weak); color:var(--brand); padding:4px 8px; border:1px solid #dbe4ff; border-radius:999px}
+  main{max-width:1280px; margin:24px auto 56px; padding:0 18px}
+  .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:16px}
+  @media (max-width:1100px){ .grid{grid-template-columns:1fr} }
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow)}
+  .card .hd{padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between}
+  .card .bd{padding:16px}
+  .h2{font-size:16px; font-weight:800; margin:0}
+  .muted{color:var(--muted)}
+  .row{display:grid; grid-template-columns:repeat(12,1fr); gap:12px}
+  .col-12{grid-column:span 12} .col-8{grid-column:span 8} .col-6{grid-column:span 6} .col-4{grid-column:span 4} .col-3{grid-column:span 3}
+  label{display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 6px; letter-spacing:.2px}
+  input[type="text"], select{width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:#fff; outline:none}
+  input:focus, select:focus{border-color:#cbd5ff; box-shadow:0 0 0 4px #e9efff}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:700}
+  .btn.primary{background:linear-gradient(180deg,#3b74ff,#2f66ff); color:#fff; border:0}
+  .btn:disabled{opacity:.6; cursor:not-allowed}
+  .chips{display:flex; flex-direction:column; gap:10px}
+  .chip{display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px; background:var(--chip); border:1px solid var(--line); padding:10px; border-radius:12px}
+  .chip .right{display:flex; gap:10px; align-items:center}
+  .capline{display:grid; grid-template-columns: 70px 1fr 48px; gap:8px; align-items:center}
+  .capline output{font-variant-numeric: tabular-nums; text-align:right}
+  .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  .kpi .tile{background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px}
+  .kpi .t{margin:0 0 4px; font-size:12px; color:var(--muted)}
+  .kpi .v{font-size:22px; font-weight:900}
+  .progress{height:10px; background:#eef2ff; border:1px solid #dbe4ff; border-radius:999px; overflow:hidden}
+  .progress .bar{height:100%; width:0%; background:linear-gradient(90deg,#87a9ff,#2f66ff)}
+  table{width:100%; border-collapse:separate; border-spacing:0}
+  th,td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{position:sticky; top:0; background:#fff; text-align:left; color:#5b6472; font-weight:800}
+  .chart{width:100%; height:172px; position:relative}
+  .bar{position:absolute; bottom:0; width:28px; background:linear-gradient(180deg,#87a9ff,#2f66ff); border-radius:6px 6px 0 0}
+  .bar label{position:absolute; bottom:100%; left:50%; transform:translate(-50%,-6px); font-size:11px; color:var(--muted)}
+  .legend{display:flex; gap:14px; align-items:center; margin-top:8px; color:var(--muted); font-size:12px}
+  .legend .key{width:12px; height:12px; border-radius:2px; background:linear-gradient(180deg,#87a9ff,#2f66ff); border:1px solid #dbe4ff}
+  .pill{background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:6px 10px; display:inline-flex; align-items:center; gap:8px}
+  .hr{height:1px; background:linear-gradient(90deg,transparent,#e7ebf5,transparent); margin:12px 0}
+  /* Board */
+  .board{display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px}
+  .lane{background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px}
+  .lane .lane-hd{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .meter{height:8px; border-radius:999px; background:#eef2ff; border:1px solid #dbe4ff; position:relative; overflow:hidden}
+  .meter .fill{position:absolute; left:0; top:0; height:100%; width:0%; background:linear-gradient(90deg,#a3d89a,#16a34a)}
+  .lane .cap{font-size:12px; color:var(--muted)}
+  .task{border:1px solid var(--line); background:#fbfcff; border-radius:12px; padding:10px; margin:8px 0; cursor:grab}
+  .task.dragging{opacity:.6}
+  .lane.drop-target{outline:2px dashed #99b7ff; outline-offset:2px}
+  .right{ text-align:right; }
 </style>
 </head>
 <body>
-  <header>
-    <h1><i class="fa-solid fa-wifi"></i> StayFi Executive Tracker</h1>
-    <div class="header-actions">
-      <button class="btn btn-ghost" id="btnTheme"><i class="fa-solid fa-circle-half-stroke"></i> Theme</button>
-      <button class="btn btn-ghost" id="btnBrief"><i class="fa-regular fa-file-lines"></i> Auto-Brief</button>
-      <button class="btn btn-ghost" id="btnRefresh"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
-      <button class="btn btn-ghost" id="btnExportIssues"><i class="fa-solid fa-triangle-exclamation"></i> Export Issues</button>
-      <button class="btn btn-primary" id="btnExportAll"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+<header>
+  <div class="nav">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l8.66 5v8L12 21l-8.66-5V8L12 3z" stroke="#2f66ff" stroke-width="1.6" fill="#e9f0ff"/></svg>
+      Contractor Assignment Console
+      <span class="badge">Executive</span>
     </div>
-  </header>
+    <div class="muted">Boardroom-grade routing & workload planning</div>
+  </div>
+</header>
 
-  <div id="errorBanner" class="banner"><i class="fa-solid fa-circle-exclamation"></i> <span id="errorText">Failed to load data. Showing last cached snapshot.</span></div>
-
-  <div class="wrap surface">
-    <!-- KPI Row -->
-    <section class="kpis" aria-label="Key metrics">
-      <div class="kpi"><h3>Total Devices</h3><div class="val" id="kpiTotal">0 <span class="delta" id="deltaTotal">—</span></div><small id="kpiCities" class="muted"></small></div>
-      <div class="kpi good"><h3>Connected</h3><div class="val" id="kpiUp">0 <span class="delta" id="deltaUp">—</span></div><small id="kpiUpPct" class="muted"></small></div>
-      <div class="kpi bad"><h3>Disconnected</h3><div class="val" id="kpiDown">0 <span class="delta" id="deltaDown">—</span></div><small id="kpiDownPct" class="muted"></small></div>
-      <div class="kpi"><h3>Avg Wireless Signal</h3><div class="val" id="kpiSignal">— <span class="delta" id="deltaSignal">—</span></div><small class="muted">Connected wireless only</small></div>
-    </section>
-
-    <!-- Controls -->
-    <section class="controls" aria-label="Filters">
-      <input id="q" placeholder="Search: property, city, MAC, model…" aria-label="Search" />
-      <select id="city" aria-label="City"><option value="">All cities</option></select>
-      <select id="status" aria-label="Status"><option value="">All statuses</option><option>Connected</option><option>Disconnected</option></select>
-      <select id="model" aria-label="Model"><option value="">All models</option></select>
-      <button class="btn" id="btnIssues"><i class="fa-solid fa-bug"></i> Issues</button>
-      <button class="btn" id="btnClear"><i class="fa-solid fa-eraser"></i> Clear</button>
-      <div class="muted" id="lastUpdated" style="align-self:center;text-align:right"></div>
-    </section>
-
-    <!-- Tabs -->
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="table"><i class="fa-solid fa-table"></i> Table</button>
-      <button class="tab" data-tab="map"><i class="fa-solid fa-map"></i> Map</button>
-      <button class="tab" data-tab="heat"><i class="fa-solid fa-fire"></i> Signal Heatmap</button>
-      <button class="tab" data-tab="brief"><i class="fa-regular fa-file-lines"></i> Brief</button>
-    </nav>
-
-    <!-- TABLE VIEW -->
-    <section id="view-table" class="table-wrap" role="region" aria-label="Devices table">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th data-sort="City">City</th>
-            <th data-sort="Property">Property</th>
-            <th data-sort="Device Label">Device</th>
-            <th data-sort="Device ID">ID</th>
-            <th data-sort="MAC Address">MAC</th>
-            <th data-sort="Model">Model</th>
-            <th data-sort="Status">Status</th>
-            <th data-sort="Connection">Connection</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </section>
-
-    <!-- MAP VIEW -->
-    <section id="view-map" class="hidden">
-      <div id="map" class="surface"></div>
-      <div class="sticky-footer"><span class="muted">Markers use property lat/long when available; otherwise city centroid.</span><span id="mapNote"></span></div>
-    </section>
-
-    <!-- HEATMAP VIEW (Histogram) -->
-    <section id="view-heat" class="hidden">
-      <div id="heat">
-        <canvas id="heatCanvas" height="240"></canvas>
+<main>
+  <div class="grid">
+    <!-- LEFT: Planner -->
+    <section class="card">
+      <div class="hd">
+        <div class="h2">Planner</div>
+        <div id="status" class="muted">Loading…</div>
       </div>
-      <div class="sticky-footer"><span class="muted">Distribution of connected wireless signal strengths.</span></div>
+      <div class="bd">
+        <div class="row">
+          <div class="col-12">
+            <label>Published Spreadsheet (pubhtml)</label>
+            <input id="pubhtmlUrl" type="text" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRkKGxXCLnmlEvHZm6oeUjzSguxRia70_3dQuCIc58UAj9YmbMO0Vttx--4k3rai-JqqkLvfwlr8Mk5/pubhtml" />
+          </div>
+          <div class="col-6">
+            <label>City (from sheet)</label>
+            <select id="citySelect"><option value="">Loading…</option></select>
+          </div>
+          <div class="col-6">
+            <label>Day</label>
+            <select id="daySelect">
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div class="col-6">
+            <label>Contractor (from Contractors!D)</label>
+            <select id="contractorSelect"><option value="">Loading…</option></select>
+          </div>
+          <div class="col-3">
+            <label>Initial Qty</label>
+            <input id="qtyInput" type="text" placeholder="e.g., 2" />
+          </div>
+          <div class="col-3" style="display:flex; align-items:flex-end;">
+            <button id="addBtn" class="btn">Add</button>
+          </div>
+          <div class="col-12">
+            <div id="selectedWrap" class="chips" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div class="col-12">
+            <div style="display:flex; gap:12px; align-items:center; justify-content:space-between">
+              <div class="stack">
+                <button id="runBtn" class="btn primary">Run Optimization</button>
+                <button id="resetBtn" class="btn">Reset</button>
+              </div>
+              <div style="min-width:260px;">
+                <div class="progress" aria-label="Optimization progress">
+                  <div id="progressBar" class="bar" style="width:0%"></div>
+                </div>
+                <div id="progressText" class="muted" style="text-align:right; font-size:12px; margin-top:4px;">0%</div>
+              </div>
+            </div>
+            <div class="muted" style="margin-top:8px;">Distance Matrix used once per pairing. API key embedded.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- BRIEF VIEW -->
-    <section id="view-brief" class="hidden" style="padding:12px">
-      <h3 style="margin-top:0">Top Issues</h3>
-      <ol id="issuesList" style="line-height:1.6"></ol>
-      <div class="sticky-footer"><span id="briefNote" class="muted"></span></div>
+    <!-- RIGHT: Overview -->
+    <section class="card">
+      <div class="hd">
+        <div class="h2">Executive Overview</div>
+        <div class="stack">
+          <button id="dlOptimized" class="btn" disabled>Download Optimized</button>
+          <button id="dlSummary" class="btn" disabled>Download Summary</button>
+          <button id="dlUnassignable" class="btn" disabled>Download Unassignable</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kpi" id="kpis">
+          <div class="tile"><div class="t">Total Tasks</div><div class="v" id="kpiTasks">—</div></div>
+          <div class="tile"><div class="t">Assigned</div><div class="v" id="kpiAssigned">—</div></div>
+          <div class="tile"><div class="t">Unassignable</div><div class="v" id="kpiUn">—</div></div>
+          <div class="tile"><div class="t">Contractors</div><div class="v" id="kpiHM">—</div></div>
+        </div>
+        <div class="hr"></div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <span class="pill">Hour (Chicago): <b id="pillHour">—</b></span>
+          <span class="pill">City: <b id="pillCity">—</b></span>
+          <span class="pill">Day: <b id="pillDay">—</b></span>
+          <span class="pill">DM Calls: <b id="pillCalls">—</b></span>
+        </div>
+        <div class="hr"></div>
+        <div class="h2" style="margin-bottom:6px;">Distance by Contractor</div>
+        <div class="chart" id="distChart"></div>
+        <div class="legend"><span class="key"></span> Total travel (miles)</div>
+      </div>
     </section>
-
-    <div class="sticky-footer"><span class="muted">Tip: Press <strong>/</strong> to focus search • Click any MAC to copy</span></div>
   </div>
 
+  <section class="card" style="margin-top:16px;">
+    <div class="hd"><div class="h2">Assignment Board</div><div class="muted">Drag tasks between contractors (capacity-aware). Use sliders to change capacity.</div></div>
+    <div class="bd">
+      <div id="board" class="board"></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="hd"><div class="h2">Optimized Assignments</div><div class="muted">Nearest-contractor allocation</div></div>
+    <div class="bd" id="optTable"></div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="hd"><div class="h2">Distance Summary</div><div class="muted">Travel load & route links</div></div>
+    <div class="bd" id="sumTable"></div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="hd"><div class="h2">Unassignable Units</div><div class="muted">Outside time windows or missing data</div></div>
+    <div class="bd" id="unTable"></div>
+  </section>
+</main>
+
 <script>
-/***** CONFIG *****/
-const CONFIG = {
-  STAYFI_BASE: "", // e.g. "https://portal.stayfi.com/access-points/" -> append Device ID if no StayFi URL column
-  CSV_URL: 'https://docs.google.com/spreadsheets/d/1RkUCHBx79DPhax0oUP0CofotqtEXq809wpYmqNUuIX8/export?format=csv&gid=2019561525',
-  CITY_COORDS: {
-    "Belgrade, MT": [45.777, -111.176],
-    "Louisville, KY": [38.2527, -85.7585],
-    "Nashville, TN": [36.1627, -86.7816],
-    "Sun Valley, ID": [43.6970, -114.351],
-    "Truckee, CA": [39.3279, -120.183]
+/* ===== CONFIG ===== */
+const SHEET_NAMES = {
+  CONTRACTORS: 'Contractors', // names in column D (index 3)
+  PROPERTY: 'Property Repairs & Maintenance'
+};
+// Embedded Distance Matrix API key (replace if needed)
+const DIST_API_KEY = "AIzaSyBCquBYPDA8je69fxnjKwM2y6tuNWNygwQ";
+const TZ = 'America/Chicago';
+
+/* ===== UTIL ===== */
+const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
+function chicagoHourNow(){
+  const parts = new Intl.DateTimeFormat('en-US',{hour:'numeric', hour12:false, timeZone:TZ}).formatToParts(new Date());
+  return parseInt(parts.find(p=>p.type==='hour')?.value || '0', 10);
+}
+function cleanName(s){ return s ? String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase() : ''; }
+function getColumnMap(header){ const m={}; header.forEach((h,i)=> m[String(h).trim().toLowerCase()] = i); return m; }
+function parseCSV(text){
+  const rows=[]; let cur=[]; let val=''; let inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"' && text[i+1]==='"'){ val+='"'; i++; continue; }
+      if(ch==='"'){ inQ=false; continue; }
+      val+=ch;
+    }else{
+      if(ch==='"'){ inQ=true; continue; }
+      if(ch===','){ cur.push(val); val=''; continue; }
+      if(ch==='\n'){ cur.push(val); rows.push(cur); cur=[]; val=''; continue; }
+      if(ch==='\r'){ continue; }
+      val+=ch;
+    }
   }
+  cur.push(val); rows.push(cur);
+  return rows;
+}
+function table(containerId, headers, rows){
+  const el=document.getElementById(containerId);
+  if(!rows.length){ el.innerHTML='<div class="muted">No rows.</div>'; return; }
+  let html = '<div style="overflow:auto; max-height:460px; border:1px solid var(--line); border-radius:12px;"><table><thead><tr>';
+  html += headers.map(h=>`<th>${h}</th>`).join('');
+  html += '</tr></thead><tbody>';
+  html += rows.map(r=>'<tr>'+r.map(c=>`<td>${c==null?'':c}</td>`).join('')+'</tr>').join('');
+  html += '</tbody></table></div>';
+  el.innerHTML=html;
+}
+function toCSV(headers, rows){
+  const esc=v=>{ const s=v==null?'':String(v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  return [headers.map(esc).join(','), ...rows.map(r=>r.map(esc).join(','))].join('\n');
+}
+function downloadCSV(filename, headers, rows){
+  const blob=new Blob([toCSV(headers,rows)],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+}
+function setStatus(t){ document.getElementById('status').textContent=t; }
+function setProgress(pct){
+  const bar=document.getElementById('progressBar');
+  const txt=document.getElementById('progressText');
+  bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  txt.textContent = Math.round(Math.max(0, Math.min(100, pct))) + '%';
+}
+
+/* ===== SHEET LOADING ===== */
+function extractDocIdFromPubhtml(url){
+  const m=url.match(/\/spreadsheets\/d\/e\/([^/]+)\/pubhtml/i);
+  if(!m) throw new Error('Invalid pubhtml URL');
+  return m[1];
+}
+async function fetchGids(pubhtmlUrl){
+  const res = await fetch(pubhtmlUrl, {mode:'cors'});
+  const html = await res.text();
+  const map={}; let m; const re=/#gid=(\d+)".*?>([^<]+)<\/a>/g;
+  while((m=re.exec(html))!==null){ map[m[2].trim()]=m[1]; }
+  if(!Object.keys(map).length) throw new Error('No tabs found in pubhtml.');
+  return map;
+}
+async function fetchCSVByGid(docId, gid){
+  const url=`https://docs.google.com/spreadsheets/d/e/${docId}/pub?gid=${encodeURIComponent(gid)}&single=true&output=csv`;
+  const res=await fetch(url, {mode:'cors'});
+  if(!res.ok) throw new Error('CSV fetch failed: '+res.status);
+  return parseCSV(await res.text());
+}
+
+/* ===== APP STATE ===== */
+const state = {
+  docId:null, gids:{},
+  contractorsCSV:null, propertyCSV:null,
+  contractorNames:[], cities:[],
+  contractorInfo:new Map(), // name -> {homeAddress?:string}
+  routeSelections:new Map(), // name -> capacity
+  dmCalls:0,
+  // optimization
+  tasks:[], // [{id, lat, lng, name, row, details, slack, listing, today, tomorrow, assignedTo?, distanceMeters?, durationSeconds?}]
+  assignments:new Map(), // name -> Set(taskId), includes 'Unassigned'
+  capacities:new Map(), // name -> capacity
+  contractorMeta:new Map(), // name -> {homeAddress}
 };
 
-/***** UTILITIES *****/
-const $  = (s)=>document.querySelector(s);
-const $$ = (s)=>Array.from(document.querySelectorAll(s));
-const copy = (t)=>navigator.clipboard.writeText(String(t||''));
-
-function showError(msg){ const b=$('#errorBanner'); if(!b) return; $('#errorText').textContent=msg; b.style.display='block'; }
-function hideError(){ const b=$('#errorBanner'); if(b) b.style.display='none'; }
-
-function parseCSV(text){
-  text = String(text||'').replace(/\r?\n/g,'\n');
-  const rows=[]; let cur='', inQ=false, row=[];
-  for(let i=0;i<text.length;i++){
-    const ch=text[i], next=text[i+1];
-    if(ch==='"'){ if(inQ && next==='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
-    else if(ch===',' && !inQ){ row.push(cur); cur=''; }
-    else if(ch==='\n' && !inQ){ row.push(cur); rows.push(row); row=[]; cur=''; }
-    else cur+=ch;
-  }
-  if(cur.length || row.length){ row.push(cur); rows.push(row); }
-  return rows.map(r=> r.map(c=> String(c??'').trim()));
-}
-
-function parseSignal(conn, explicit){
-  if(explicit!=null && !Number.isNaN(explicit)) return explicit;
-  const m = /Wireless\s*[•\u2022]\s*(\d+)%/i.exec(conn||"");
-  return m? Number(m[1]) : null;
-}
-
-function sortBy(list,key,dir){
-  return [...list].sort((a,b)=>{
-    const va=a[key]??''; const vb=b[key]??'';
-    const na=parseFloat(String(va).replace(/[^0-9.\-]/g,'')); const nb=parseFloat(String(vb).replace(/[^0-9.\-]/g,''));
-    const num=!Number.isNaN(na)&&!Number.isNaN(nb) && (/^\d/.test(String(va))||/^\d/.test(String(vb)));
-    return num? (na-nb)*dir : String(va).localeCompare(String(vb),undefined,{numeric:true,sensitivity:'base'})*dir;
-  });
-}
-
-function groupBy(arr,key){ return arr.reduce((m,o)=>((m[o[key]]??=[]).push(o),m),{}); }
-function fmtDelta(n){ if(n===null||Number.isNaN(n)) return '—'; const s = n>0? '+'+n : n; const color = n>0? 'var(--good)' : (n<0? 'var(--bad)':'var(--muted)'); return `<span class="delta" style="color:${color}">${s}</span>`; }
-
-/***** STATE *****/
-let DATA = [];
-const state = {q:'',city:'',status:'',model:'',issues:false,sortKey:null,sortDir:1,activeTab:'table'};
-
-/***** FETCH + CACHE (resilient) *****/
-async function fetchSheet(){
+/* ===== BOOTSTRAP ===== */
+async function bootstrap(){
   try{
-    const url = CONFIG.CSV_URL + '&_ts=' + Date.now(); // cache-bust
-    const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok){
-      const peek = await res.text().catch(()=> '');
-      console.error('Fetch failed', res.status, res.statusText, peek.slice(0,400));
-      throw new Error('HTTP '+res.status);
+    setStatus('Discovering tabs…');
+    const pubhtml=document.getElementById('pubhtmlUrl').value.trim();
+    const docId=extractDocIdFromPubhtml(pubhtml);
+    state.docId=docId;
+    const gids=await fetchGids(pubhtml);
+    state.gids=gids;
+
+    const getGid=(n)=>{
+      const keys=Object.keys(gids);
+      const exact=keys.find(k=>k===n) ?? keys.find(k=>k.toLowerCase()===n.toLowerCase());
+      if(!exact) throw new Error(`Missing required tab "${n}"`);
+      return gids[exact];
+    };
+
+    setStatus('Loading sheets…');
+    const [contractorsCSV, propCSV] = await Promise.all([
+      fetchCSVByGid(docId, getGid(SHEET_NAMES.CONTRACTORS)),
+      fetchCSVByGid(docId, getGid(SHEET_NAMES.PROPERTY)),
+    ]);
+    state.contractorsCSV=contractorsCSV; state.propertyCSV=propCSV;
+
+    // Contractor names from Contractors!D
+    const colD = 3; // zero-based
+    const names = contractorsCSV.slice(1).map(r=>r[colD]).filter(Boolean);
+    const headerGuess = String((contractorsCSV[0]||[])[colD]||'').toLowerCase();
+    const filtered = names.filter(n=> cleanName(n) && cleanName(n)!==cleanName(headerGuess) );
+    state.contractorNames = [...new Set(filtered)].sort((a,b)=>String(a).localeCompare(String(b)));
+
+    // Optional: home_address/address column
+    const cHeader = contractorsCSV[0] || [];
+    const cMap = getColumnMap(cHeader);
+    const cHome = (cMap['home_address']!==undefined) ? cMap['home_address'] :
+                  (cMap['address']!==undefined ? cMap['address'] : null);
+    if(cHome!=null){
+      for(const r of contractorsCSV.slice(1)){
+        const name = r[colD];
+        if(!name) continue;
+        const addr = r[cHome];
+        if(addr) state.contractorInfo.set(String(name), {homeAddress:String(addr)});
+      }
     }
-    const csv = await res.text();
-    localStorage.setItem('stayfi_cache_csv_v1', csv);
-    localStorage.setItem('stayfi_cache_time_v1', String(Date.now()));
-    hideError();
-    return csv;
+
+    // Cities from Property
+    const pHeader=propCSV[0]; const pMap=getColumnMap(pHeader);
+    const cCity=pMap['city']; if(cCity===undefined) throw new Error('Property tab missing "city" column');
+    const cities=[...new Set(propCSV.slice(1).map(r=>r[cCity]).filter(Boolean).map(s=>String(s).trim().toLowerCase()))]
+      .sort((a,b)=>a.localeCompare(b));
+    state.cities=cities;
+
+    // Fill selects
+    fillSelect(document.getElementById('contractorSelect'), state.contractorNames, 'Select contractor…');
+    fillSelect(document.getElementById('citySelect'), state.cities, 'Select city…');
+
+    setStatus('Ready.');
   }catch(e){
-    console.error('Fetch error', e);
-    const cached = localStorage.getItem('stayfi_cache_csv_v1');
-    if(cached){
-      const when = new Date(Number(localStorage.getItem('stayfi_cache_time_v1')||Date.now()));
-      showError(`Live data unavailable; showing last cached snapshot from ${when.toLocaleString()}. Retrying in 60s…`);
-      setTimeout(()=>reloadData(true), 60000);
-      return cached;
+    console.error(e); setStatus('Error: '+e.message);
+  }
+}
+function fillSelect(el, values, placeholder){
+  el.innerHTML='';
+  const opt0=document.createElement('option'); opt0.value=''; opt0.textContent=placeholder; el.appendChild(opt0);
+  values.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+}
+
+/* ===== DISTANCE ===== */
+const distCache=new Map();
+async function getDistanceAndDuration(origin, lat, lng){
+  const key=origin+'|'+lat+','+lng;
+  if(distCache.has(key)) return distCache.get(key);
+  if(!origin){ return null; }
+  const url=`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(lat+','+lng)}&key=${encodeURIComponent(DIST_API_KEY)}`;
+  const res=await fetch(url);
+  const data=await res.json();
+  const el=data?.rows?.[0]?.elements?.[0];
+  if(data.status==='OK' && el?.status==='OK'){
+    const out={distanceMeters:el.distance.value, durationSeconds:el.duration.value};
+    distCache.set(key,out); state.dmCalls += 1; await sleep(50); return out;
+  }
+  return null;
+}
+function metersToMiles(m){ return (m/1609.344); }
+function makeRouteLink(start, stops){
+  if(!stops.length || !start) return '';
+  const origin=encodeURIComponent(start);
+  const dest=encodeURIComponent(`${stops[stops.length-1].lat},${stops[stops.length-1].lng}`);
+  const waypts=stops.length>1?`&waypoints=${stops.slice(0,-1).map(t=>`${t.lat},${t.lng}`).join('|')}`:'';
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypts}`;
+}
+
+/* ===== CAPACITY + BOARD HELPERS ===== */
+function capacityInfo(name){
+  const cap=state.capacities.get(name)||0;
+  const used=(state.assignments.get(name)?.size)||0;
+  const pct = cap>0 ? Math.min(100, Math.round((used/cap)*100)) : 0;
+  return {cap, used, pct};
+}
+function updateCapacity(name, newCap){
+  state.capacities.set(name, newCap);
+  // If over capacity, spill furthest tasks to Unassigned
+  const set = state.assignments.get(name) || new Set();
+  if(set.size > newCap){
+    // rank tasks by distance descending (furthest first)
+    const tasks = [...set].map(id => state.tasks.find(t=>t.id===id)).filter(Boolean);
+    tasks.sort((a,b)=> (b.distanceMeters||0) - (a.distanceMeters||0));
+    const overflow = tasks.slice(newCap); // how many to remove
+    const un = state.assignments.get('Unassigned') || new Set(); state.assignments.set('Unassigned', un);
+    overflow.forEach(t=>{
+      set.delete(t.id);
+      t.assignedTo = undefined;
+      un.add(t.id);
+    });
+  }
+  renderBoard();
+  renderTables(); // refresh tables/summary
+  renderChart();
+  document.getElementById('kpiAssigned').textContent=String(state.tasks.filter(x=>x.assignedTo).length);
+}
+
+/* ===== RENDER UI PIECES ===== */
+function chipHTML(name, cap){
+  const {used, pct} = capacityInfo(name);
+  const maxSlider = Math.max(cap, used, 20); // reasonable headroom
+  return `
+    <div class="chip" data-chip="${name}">
+      <div>
+        <div style="font-weight:700">${name}</div>
+        <div class="capline">
+          <span class="muted">Capacity</span>
+          <input type="range" min="0" max="${maxSlider}" step="1" value="${cap}" data-slider="${name}" />
+          <output data-out="${name}">${cap}</output>
+        </div>
+        <div class="muted" style="font-size:12px; margin-top:6px;">Used: ${used}/${cap} (${cap>0?Math.round((used/cap)*100):0}%)</div>
+      </div>
+      <div class="right">
+        <button class="btn" data-remove="${name}" title="Remove">✕</button>
+      </div>
+    </div>
+  `;
+}
+function renderRouteChips(){
+  const wrap=document.getElementById('selectedWrap'); wrap.innerHTML='';
+  for(const [name, cap] of state.routeSelections.entries()){
+    const div=document.createElement('div');
+    div.innerHTML=chipHTML(name, cap);
+    const node=div.firstElementChild;
+    wrap.appendChild(node);
+  }
+  // wire sliders & remove
+  wrap.querySelectorAll('input[type="range"][data-slider]').forEach(sl=>{
+    sl.addEventListener('input', (e)=>{
+      const name=e.target.getAttribute('data-slider');
+      const out=wrap.querySelector(`output[data-out="${CSS.escape(name)}"]`);
+      out.textContent = e.target.value;
+    });
+    sl.addEventListener('change', (e)=>{
+      const name=e.target.getAttribute('data-slider');
+      const val=parseInt(e.target.value,10);
+      state.routeSelections.set(name, val);
+      updateCapacity(name, val);
+    });
+  });
+  wrap.querySelectorAll('button[data-remove]').forEach(btn=>{
+    btn.onclick=()=>{
+      const name=btn.getAttribute('data-remove');
+      // move tasks back to Unassigned
+      const set = state.assignments.get(name) || new Set();
+      const un = state.assignments.get('Unassigned') || new Set(); state.assignments.set('Unassigned', un);
+      [...set].forEach(id=>{
+        set.delete(id);
+        const t=state.tasks.find(x=>x.id===id); if(t){ t.assignedTo=undefined; un.add(id); }
+      });
+      state.assignments.delete(name);
+      state.capacities.delete(name);
+      state.routeSelections.delete(name);
+      renderRouteChips(); renderBoard(); renderTables(); renderChart();
+      document.getElementById('kpiAssigned').textContent=String(state.tasks.filter(x=>x.assignedTo).length);
+    };
+  });
+}
+function laneHTML(name, showMeter=true){
+  const {cap, used, pct}=capacityInfo(name);
+  const meter = showMeter ? `
+    <div class="lane-hd">
+      <div><b>${name}</b></div>
+      <div class="cap">${used}/${cap}</div>
+    </div>
+    <div class="meter" aria-label="Capacity meter"><div class="fill" style="width:${pct}%"></div></div>
+  ` : `
+    <div class="lane-hd"><div><b>${name}</b></div><div class="cap">${used}</div></div>
+  `;
+  return `
+    <div class="lane" data-contractor="${name}">
+      ${meter}
+      <div class="lane-body" style="margin-top:10px;"></div>
+    </div>
+  `;
+}
+function taskCardHTML(t){
+  return `
+    <div class="task" draggable="true" data-task="${t.id}">
+      <div><b>${t.name || '(Unnamed property)'}</b></div>
+      <div class="muted" style="font-size:12px;">Row ${t.row} • ${t.lat.toFixed(5)}, ${t.lng.toFixed(5)}</div>
+      ${t.details ? `<div class="muted" style="font-size:12px; margin-top:4px;">${t.details}</div>` : ``}
+      ${Number.isFinite(t.distanceMeters) ? `<div class="muted" style="font-size:12px; margin-top:4px;">~${metersToMiles(t.distanceMeters).toFixed(2)} mi • ${Math.ceil((t.durationSeconds||0)/60)} min</div>` : ``}
+    </div>
+  `;
+}
+function renderBoard(){
+  const board=document.getElementById('board');
+  board.innerHTML='';
+  // Unassigned lane first
+  const unDiv=document.createElement('div');
+  unDiv.innerHTML=laneHTML('Unassigned', /*showMeter=*/false);
+  const unLane=unDiv.firstElementChild;
+  board.appendChild(unLane);
+
+  // Contractor lanes
+  for(const [name] of state.routeSelections.entries()){
+    const wrap=document.createElement('div');
+    wrap.innerHTML=laneHTML(name);
+    board.appendChild(wrap.firstElementChild);
+  }
+
+  // Populate cards
+  const placeInLane = (laneName, t) => {
+    const lane = [...board.querySelectorAll('.lane')].find(l=>l.getAttribute('data-contractor')===laneName);
+    lane.querySelector('.lane-body').insertAdjacentHTML('beforeend', taskCardHTML(t));
+  };
+  // Build lane sets default
+  if(!state.assignments.has('Unassigned')) state.assignments.set('Unassigned', new Set());
+  // Ensure every selected contractor has a set
+  for(const [n] of state.routeSelections.entries()){
+    if(!state.assignments.has(n)) state.assignments.set(n,new Set());
+  }
+  // Place tasks per assignments
+  for(const t of state.tasks){
+    const laneName = t.assignedTo ?? 'Unassigned';
+    placeInLane(laneName, t);
+  }
+
+  // DnD handlers
+  board.querySelectorAll('.lane').forEach(lane=>{
+    lane.addEventListener('dragover', (e)=>{ e.preventDefault(); lane.classList.add('drop-target'); });
+    lane.addEventListener('dragleave', ()=> lane.classList.remove('drop-target'));
+    lane.addEventListener('drop', async (e)=>{
+      e.preventDefault(); lane.classList.remove('drop-target');
+      const tid=e.dataTransfer.getData('text/plain');
+      const toName=lane.getAttribute('data-contractor');
+      await moveTask(tid, toName);
+    });
+  });
+  board.querySelectorAll('.task').forEach(el=>{
+    el.addEventListener('dragstart', (e)=>{ el.classList.add('dragging'); e.dataTransfer.setData('text/plain', el.getAttribute('data-task')); });
+    el.addEventListener('dragend', ()=> el.classList.remove('dragging'));
+  });
+}
+
+/* ===== MOVE / REASSIGN ===== */
+async function moveTask(taskId, toName){
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  const fromName = t.assignedTo ?? 'Unassigned';
+
+  if(toName !== 'Unassigned'){
+    const cap = state.capacities.get(toName)||0;
+    const used = (state.assignments.get(toName)?.size)||0;
+    if(used >= cap){ alert(`Capacity reached for ${toName}`); return; }
+  }
+
+  // Remove from source
+  const fromSet = state.assignments.get(fromName) || new Set(); fromSet.delete(taskId);
+
+  if(toName === 'Unassigned'){
+    t.assignedTo = undefined;
+    const un = state.assignments.get('Unassigned') || new Set(); un.add(taskId); state.assignments.set('Unassigned', un);
+  } else {
+    // Recompute distance for new pairing
+    const meta=state.contractorMeta.get(toName)||{};
+    const dm=await getDistanceAndDuration(meta.homeAddress||'', t.lat, t.lng);
+    if(dm){ t.distanceMeters=dm.distanceMeters; t.durationSeconds=dm.durationSeconds; }
+    t.assignedTo = toName;
+    const set = state.assignments.get(toName) || new Set(); set.add(taskId); state.assignments.set(toName, set);
+  }
+
+  renderBoard(); renderTables(); renderChart();
+  document.getElementById('kpiAssigned').textContent=String(state.tasks.filter(x=>x.assignedTo).length);
+}
+
+/* ===== OPTIMIZATION ===== */
+function nextId(){ return 't_'+Math.random().toString(36).slice(2,9); }
+
+async function runOptimization(){
+  try{
+    setStatus('Optimizing…'); setProgress(0); state.dmCalls=0;
+    // Reset containers but keep route selections
+    state.tasks=[]; state.assignments.clear(); state.capacities.clear(); state.contractorMeta.clear();
+
+    const citySel=document.getElementById('citySelect').value.trim().toLowerCase();
+    const daySel=document.getElementById('daySelect').value;
+    if(!citySel){ alert('Pick a city'); setStatus('Awaiting input'); return; }
+    if(state.routeSelections.size===0){ alert('Add at least one contractor + capacity'); setStatus('Awaiting input'); return; }
+    const hour = chicagoHourNow();
+
+    // Capacities/meta from chips
+    for(const [name, cap] of state.routeSelections.entries()){
+      state.capacities.set(name, Number(cap)||0);
+      const meta = state.contractorInfo.get(name) || {};
+      state.contractorMeta.set(name, {homeAddress: meta.homeAddress || ''});
+      state.assignments.set(name, new Set());
     }
-    showError('Could not load Google Sheet. Check CSV URL & gid. Retrying in 60s…');
-    setTimeout(()=>reloadData(true), 60000);
-    return "";
+    state.assignments.set('Unassigned', new Set());
+
+    // Collect tasks from Property
+    const pHeader=state.propertyCSV[0]; const pMap=getColumnMap(pHeader);
+    const cLat=pMap['latitude'], cLng=pMap['longitude'], cCity=pMap['city'], cRepair=pMap['repair details'], cSlack=pMap['slack channel link'], cList=pMap['listing id'];
+    const idxToday=14, idxTomorrow=15;
+    const valid=[], unassign=[];
+    for(let i=1;i<state.propertyCSV.length;i++){
+      const row=state.propertyCSV[i];
+      const lat=parseFloat(row[cLat]); const lng=parseFloat(row[cLng]);
+      const rowCity=(row[cCity]||'').toString().trim().toLowerCase();
+      const status=(row[(daySel==='today')?idxToday:idxTomorrow]||'').toString().trim();
+
+      if(rowCity!==citySel || isNaN(lat)||isNaN(lng)||!status){ unassign.push(row); continue; }
+      let ok=false;
+      if(status==='Completely Vacant') ok=true;
+      else if(status==='Vacant AFTER Check Out' && hour>=11) ok=true;
+      else if(status==='Vacant BEFORE Check In' && hour<=13) ok=true;
+      else if(status==='Turnover' && hour>=11 && hour<=15) ok=true;
+
+      const task={ id:nextId(), row:i+1, lat, lng,
+        name:row[5], details:row[cRepair], slack:row[cSlack], listing:row[cList],
+        today:row[idxToday], tomorrow:row[idxTomorrow]
+      };
+      if(ok) valid.push(task); else unassign.push(row);
+    }
+
+    // Assign greedily to nearest with capacity & progress %
+    const totalSteps = Math.max(1, valid.length);
+    let done=0;
+    for(const t of valid){
+      let pick=null; let bestDist=Number.POSITIVE_INFINITY; let bestDur=0;
+      for(const [name, set] of state.assignments.entries()){
+        if(name==='Unassigned') continue;
+        const cap=state.capacities.get(name)||0;
+        if(set.size >= cap) continue;
+        const meta=state.contractorMeta.get(name)||{};
+        const dm=await getDistanceAndDuration(meta.homeAddress||'', t.lat, t.lng);
+        const d=dm?.distanceMeters ?? Number.POSITIVE_INFINITY;
+        if(d<bestDist){ pick=name; bestDist=d; bestDur=dm?.durationSeconds||0; }
+      }
+      if(pick){
+        const set = state.assignments.get(pick); set.add(t.id);
+        t.assignedTo=pick; t.distanceMeters=bestDist; t.durationSeconds=bestDur;
+      } else {
+        state.assignments.get('Unassigned').add(t.id);
+      }
+      state.tasks.push(t);
+      done++; setProgress((done/totalSteps)*100);
+    }
+
+    // KPIs & pills
+    document.getElementById('kpiTasks').textContent=String(valid.length);
+    document.getElementById('kpiAssigned').textContent=String(state.tasks.filter(x=>x.assignedTo).length);
+    document.getElementById('kpiUn').textContent=String(unassign.length);
+    document.getElementById('kpiHM').textContent=String(state.routeSelections.size);
+    document.getElementById('pillHour').textContent=String(hour).padStart(2,'0')+':00';
+    document.getElementById('pillCity').textContent=citySel || '—';
+    document.getElementById('pillDay').textContent=(daySel==='today'?'Today':'Tomorrow');
+    document.getElementById('pillCalls').textContent=String(state.dmCalls);
+
+    renderBoard(); renderTables(unassign); renderChart();
+
+    // Downloads enable
+    document.getElementById('dlOptimized').disabled=false;
+    document.getElementById('dlSummary').disabled=false;
+    document.getElementById('dlUnassignable').disabled=false;
+
+    setStatus('Done.');
+  }catch(e){
+    console.error(e); setStatus('Error: '+e.message);
   }
 }
 
-function rowsToObjects(rows){
-  if(!rows.length) return [];
-  const header = rows[0];
-  const idx = Object.fromEntries(header.map((h,i)=>[String(h).toLowerCase(), i]));
-  const gi = (h)=> idx[String(h).toLowerCase()] ?? -1;
-  const get = (r,h)=>{ const i = gi(h); return i>=0? r[i] : ''; }
+/* ===== TABLES & CHART ===== */
+function renderTables(unassignExplicit){
+  // Optimized Assignments
+  const optHeaders=['Contractor','Task Row','Property','Latitude','Longitude','Repair Details','Slack Channel Link','Listing ID','Today','Tomorrow'];
+  const optRows=[];
+  for(const t of state.tasks){
+    if(!t.assignedTo) continue;
+    optRows.push([t.assignedTo, t.row, t.name, t.lat, t.lng, t.details, t.slack, t.listing, t.today, t.tomorrow]);
+  }
+  table('optTable', optHeaders, optRows);
 
-  return rows.slice(1).filter(r=>r.some(c=>c && String(c).trim()!=='')).map(r=>({
-    City: get(r,'City'),
-    Property: get(r,'Property'),
-    'Device Label': get(r,'Device Label'),
-    'Device ID': get(r,'Device ID'),
-    'MAC Address': get(r,'MAC Address'),
-    Model: get(r,'Model'),
-    Status: get(r,'Status'),
-    Connection: get(r,'Connection'),
-    Location: get(r,'Location'),
-    Latitude: Number(get(r,'Latitude'))||null,
-    Longitude: Number(get(r,'Longitude'))||null,
-    'Connection Type': get(r,'Connection Type')||'',
-    'Signal %': (Number(get(r,'Signal %'))||null),
-    'StayFi URL': get(r,'StayFi URL')||''
-  }));
+  // Distance Summary
+  const sumHeaders=['Contractor','Total Distance (miles)','Total Duration (minutes)','Route Link'];
+  const sumRows=[];
+  for(const [name, set] of state.assignments.entries()){
+    if(name==='Unassigned') continue;
+    const ids=[...set]; const stops=ids.map(id=>state.tasks.find(t=>t.id===id && t.assignedTo===name)).filter(Boolean);
+    const dSum=stops.reduce((a,t)=>a+(t.distanceMeters||0),0);
+    const mSum=metersToMiles(dSum);
+    const tSum=stops.reduce((a,t)=>a+(t.durationSeconds||0),0);
+    const route=makeRouteLink((state.contractorMeta.get(name)||{}).homeAddress, stops);
+    sumRows.push([name, mSum.toFixed(2), Math.ceil(tSum/60), route? `<a href="${route}" target="_blank">Open Route</a>`:'']);
+  }
+  table('sumTable', sumHeaders, sumRows);
+
+  // Unassignable (from sheet rules)
+  if(unassignExplicit){
+    table('unTable', state.propertyCSV[0]||[], unassignExplicit);
+  }
+
+  // Downloads
+  document.getElementById('dlOptimized').onclick=()=>downloadCSV('optimized_assignments.csv', optHeaders, optRows);
+  const sumRowsPlain=sumRows.map(r=>[r[0], r[1], r[2], 'Open Route']);
+  document.getElementById('dlSummary').onclick=()=>downloadCSV('distance_summary.csv', sumHeaders, sumRowsPlain);
+  document.getElementById('dlUnassignable').onclick=()=>downloadCSV('unassignable_units.csv', state.propertyCSV[0]||[], unassignExplicit||[]);
 }
-
-/***** FILTERS *****/
-function applyFilters(rows){
-  const q = state.q.toLowerCase();
-  let out = rows.filter(r=>{
-    const matchesQ = !q || Object.values(r).some(v=>String(v).toLowerCase().includes(q));
-    const matchesCity = !state.city || r.City===state.city;
-    const matchesStatus = !state.status || r.Status===state.status;
-    const matchesModel = !state.model || r.Model===state.model;
-    return matchesQ && matchesCity && matchesStatus && matchesModel;
-  });
-  if(state.issues){ out = out.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35); }
-  if(state.sortKey){ out = sortBy(out, state.sortKey, state.sortDir); }
-  return out;
-}
-
-/***** KPIs & TRENDS *****/
-function metrics(rows){
-  const total = rows.length;
-  const up = rows.filter(r=>r.Status==='Connected').length;
-  const down = rows.filter(r=>r.Status==='Disconnected').length;
-  const cities = Object.keys(groupBy(rows,'City')).length;
-  const sigs = rows.map(r=>parseSignal(r.Connection, r['Signal %'])).filter(x=>x!==null);
-  const avgSig = sigs.length? Math.round(sigs.reduce((a,b)=>a+b,0)/sigs.length) : null;
-  const upPct = total? Math.round(up*100/total):0;
-  const downPct = total? Math.round(down*100/total):0;
-  return {total,up,down,cities,avgSig,upPct,downPct};
-}
-function updateKpis(){
-  const m = metrics(DATA);
-  const prev = JSON.parse(localStorage.getItem('stayfi_snapshot')||'null');
-  $('#kpiTotal').innerHTML = `${m.total} ${fmtDelta(prev? m.total-prev.total : null)}`;
-  $('#kpiCities').textContent = `${m.cities} cities`;
-  $('#kpiUp').innerHTML = `${m.up} ${fmtDelta(prev? m.up-prev.up : null)}`;
-  $('#kpiUpPct').textContent = `${m.upPct}% of fleet connected`;
-  $('#kpiDown').innerHTML = `${m.down} ${fmtDelta(prev? m.down-prev.down : null)}`;
-  $('#kpiDownPct').textContent = `${m.downPct}% of fleet disconnected`;
-  $('#kpiSignal').innerHTML = `${m.avgSig==null? '—' : m.avgSig+'%'} ${fmtDelta(prev && prev.avgSig!=null ? (m.avgSig-prev.avgSig) : null)}`;
-  localStorage.setItem('stayfi_snapshot', JSON.stringify(m));
-}
-
-/***** TABLE *****/
-function openStayFi(row){
-  const url = row['StayFi URL'] || (CONFIG.STAYFI_BASE? CONFIG.STAYFI_BASE + encodeURIComponent(row['Device ID']) : '');
-  if(!url){ alert('Set CONFIG.STAYFI_BASE or add a "StayFi URL" column.'); return; }
-  window.open(url,'_blank','noopener');
-}
-
-function renderTable(){
-  const rows = applyFilters(DATA);
-  const tb = $('#tbody');
-  tb.innerHTML = rows.map(r=>{
-    const sig = parseSignal(r.Connection, r['Signal %']);
-    const issue = (r.Status==='Disconnected') || ((sig??100) < 35);
-    return `<tr${issue? ' style="outline:2px solid rgba(220,38,38,.18)"':''}>
-      <td>${r.City||''}</td>
-      <td>${r.Property||''}</td>
-      <td>${r['Device Label']||''}</td>
-      <td><span class="pill">${r['Device ID']||''}</span></td>
-      <td><code class="mac" title="Click to copy">${r['MAC Address']||''}</code></td>
-      <td>${r.Model||''}</td>
-      <td><span class="status ${r.Status==='Connected'?'connected':'disconnected'}">${r.Status||''}</span></td>
-      <td>${r.Connection||''}</td>
-      <td class="actions-col"><a href="#" class="open-link">Open</a></td>
-    </tr>`;
-  }).join('');
-
-  // Wire actions and copy-to-clipboard
-  $$('#tbody tr').forEach((tr,idx)=>{
-    const row = rows[idx];
-    tr.querySelector('.actions-col a.open-link').addEventListener('click', (e)=>{ e.preventDefault(); openStayFi(row); });
-    const mac = tr.querySelector('.mac');
-    mac.addEventListener('click', ()=>{ copy(mac.textContent); mac.title='Copied!'; setTimeout(()=>mac.title='Click to copy',900); });
-  });
-
-  $('#lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()} • Showing ${rows.length} rows`;
-}
-
-/***** CITY CARDS *****/
-function renderCityCards(){
-  const groups = groupBy(DATA,'City');
-  const html = Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([city,items])=>{
-    const up = items.filter(x=>x.Status==='Connected').length; const pct = Math.round(up*100/items.length);
-    return `<div class="mini"><strong>${city}</strong><div class="bar" aria-label="${pct}% connected"><i style="width:${pct}%"></i></div><div class="muted" style="margin-top:6px">${up}/${items.length} connected • ${pct}%</div></div>`;
-  }).join('');
-  document.querySelector('.cards')?.remove();
-  const sec = document.createElement('section'); sec.className='cards'; sec.innerHTML = html; document.querySelector('.wrap').insertBefore(sec, document.querySelector('#view-map'));
-}
-
-/***** MAP *****/
-let map;
-function initMap(){
-  if(map) return;
-  map = L.map('map');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution:'© OpenStreetMap'}).addTo(map);
-  const markers = [];
-
-  const groups = groupBy(DATA,'City');
-  Object.entries(groups).forEach(([city,items])=>{
-    const withCoords = items.filter(r=> Number.isFinite(r.Latitude) && Number.isFinite(r.Longitude));
-    if(withCoords.length){
-      withCoords.forEach(r=>{
-        const ok = r.Status==='Connected';
-        const m = L.circleMarker([r.Latitude,r.Longitude], {radius:8, color: ok?'green':'red', fillOpacity:.6}).addTo(map);
-        m.bindPopup(`<strong>${r.Property||city}</strong><br>${r.Status}${r['Signal %']!=null? ' • '+r['Signal %']+'%':''}`);
-        markers.push(m);
-      });
-    }else{
-      const coord = CONFIG.CITY_COORDS[city];
-      if(!coord) return;
-      const up = items.filter(x=>x.Status==='Connected').length;
-      const color = (up===items.length)? 'green':'red';
-      const m = L.circleMarker(coord, {radius:10, color, fillOpacity:.6}).addTo(map);
-      m.bindPopup(`<strong>${city}</strong><br>${up}/${items.length} connected`);
-      markers.push(m);
-    }
-  });
-  const group = L.featureGroup(markers);
-  if(markers.length) map.fitBounds(group.getBounds().pad(0.2));
-  $('#mapNote').textContent = 'Green=connected, Red=disconnected. Add Latitude/Longitude columns for precise pins.';
-}
-
-/***** HEATMAP (Histogram) *****/
-function renderHeat(){
-  const canvas = $('#heatCanvas'); const ctx = canvas.getContext('2d');
-  const sigs = DATA.map(r=>parseSignal(r.Connection, r['Signal %'])).filter(v=>v!==null);
-  const bins = [0,10,20,30,40,50,60,70,80,90,100];
-  const counts = new Array(bins.length-1).fill(0);
-  sigs.forEach(s=>{ for(let i=0;i<bins.length-1;i++){ if(s>=bins[i] && s<bins[i+1]){ counts[i]++; break; } } });
-  const w = canvas.width = canvas.clientWidth; const h = canvas.height; const pad=40; const bw = (w-2*pad)/counts.length;
-  ctx.clearRect(0,0,w,h);
-  // axes
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
-  ctx.beginPath(); ctx.moveTo(pad,10); ctx.lineTo(pad,h-30); ctx.lineTo(w-pad,h-30); ctx.stroke();
-  // bars
-  const max = Math.max(1, ...counts);
-  counts.forEach((c,i)=>{
-    const x = pad + i*bw + 6; const bh = ((h-60)*c)/max; const y = (h-30) - bh;
-    const low = (i*10)<35;
-    ctx.fillStyle = low ? 'rgba(239,68,68,0.85)' : 'rgba(34,197,94,0.8)';
-    ctx.fillRect(x,y,bw-12,bh);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
-    ctx.font = '12px system-ui'; ctx.textAlign='center';
-    ctx.fillText(`${bins[i]}-${bins[i+1]}`, x+(bw-12)/2, h-12);
+function renderChart(){
+  const wrap=document.getElementById('distChart');
+  wrap.innerHTML='';
+  const data=[];
+  for(const [name, set] of state.assignments.entries()){
+    if(name==='Unassigned') continue;
+    const ids=[...set]; const miles = ids.reduce((a,id)=>{
+      const t=state.tasks.find(x=>x.id===id);
+      return a + (t?.distanceMeters ? metersToMiles(t.distanceMeters) : 0);
+    },0);
+    data.push({name, miles});
+  }
+  if(!data.length){ wrap.innerHTML='<div class="muted">No data</div>'; return; }
+  const max=Math.max(...data.map(d=>d.miles),1);
+  const barW=28, gap=18;
+  data.forEach((d,i)=>{
+    const h=Math.max(2, Math.round((d.miles/max)*((wrap.clientHeight||172)-22)));
+    const x=i*(barW+gap)+12;
+    const b=document.createElement('div');
+    b.className='bar'; b.style.left=x+'px'; b.style.height=h+'px'; b.style.width=barW+'px';
+    b.innerHTML=`<label>${d.miles.toFixed(1)}</label>`;
+    b.title=`${d.name}: ${d.miles.toFixed(2)} mi`;
+    wrap.appendChild(b);
   });
 }
 
-/***** BRIEF *****/
-function renderBrief(){
-  const issues = DATA.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35);
-  issues.sort((a,b)=>{
-    const sa = parseSignal(a.Connection, a['Signal %'])??0; const sb = parseSignal(b.Connection, b['Signal %'])??0;
-    const da = a.Status==='Disconnected'? -1:0; const db = b.Status==='Disconnected'? -1:0;
-    return (db-da) || (sa - sb);
-  });
-  const top = issues.slice(0,15);
-  $('#issuesList').innerHTML = top.map(r=> `<li><strong>${r.City}</strong> — ${r.Property} • ${r.Model} • <code>${r["MAC Address"]}</code> • <em>${r.Status}</em> • ${r.Connection}</li>`).join('');
-  $('#briefNote').textContent = `${issues.length} devices require attention • Top ${top.length} listed`;
-}
-
-/***** EXPORTS *****/
-function toCSV(rows){
-  const cols = ["City","Property","Device Label","Device ID","MAC Address","Model","Status","Connection","Latitude","Longitude","Signal %","StayFi URL"];
-  const esc = v=>`"${String(v??'').replaceAll('"','""')}"`;
-  return [cols.join(','), ...rows.map(r=> cols.map(k=>esc(r[k])).join(','))].join('\n');
-}
-function exportAll(){
-  const rows = applyFilters(DATA);
-  const blob = new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='stayfi_all.csv'; a.click(); URL.revokeObjectURL(a.href);
-}
-function exportIssues(){
-  const rows = DATA.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35);
-  const blob = new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='stayfi_issues.csv'; a.click(); URL.revokeObjectURL(a.href);
-}
-
-/***** UI WIRING *****/
-function populateFilters(){
-  const cities = [...new Set(DATA.map(r=>r.City))].filter(Boolean).sort();
-  const models = [...new Set(DATA.map(r=>r.Model))].filter(Boolean).sort();
-  $('#city').innerHTML = '<option value="">All cities</option>' + cities.map(c=>`<option>${c}</option>`).join('');
-  $('#model').innerHTML = '<option value="">All models</option>' + models.map(m=>`<option>${m}</option>`).join('');
-}
-
-function setTab(tab){
-  state.activeTab = tab;
-  $('#view-table').classList.toggle('hidden', tab!=='table');
-  $('#view-map').classList.toggle('hidden', tab!=='map');
-  $('#view-heat').classList.toggle('hidden', tab!=='heat');
-  $('#view-brief').classList.toggle('hidden', tab!=='brief');
-  $$('.tab').forEach(t=> t.classList.toggle('active', t.dataset.tab===tab));
-  if(tab==='map') initMap();
-  if(tab==='heat') renderHeat();
-  if(tab==='brief') renderBrief();
-}
-
-function briefModeToggle(){
-  const on = document.body.dataset.brief==='1';
-  if(on){ delete document.body.dataset.brief; $('.controls').classList.remove('hidden'); setTab('table'); }
-  else { document.body.dataset.brief='1'; $('.controls').classList.add('hidden'); setTab('brief'); }
-}
-
-function bindEvents(){
-  $('#q').addEventListener('input', e=>{ state.q=e.target.value.trim(); renderTable(); });
-  $('#city').addEventListener('change', e=>{ state.city=e.target.value; renderTable(); });
-  $('#status').addEventListener('change', e=>{ state.status=e.target.value; renderTable(); });
-  $('#model').addEventListener('change', e=>{ state.model=e.target.value; renderTable(); });
-  $('#btnIssues').addEventListener('click', ()=>{ state.issues=true; renderTable(); setTab('brief'); renderBrief(); });
-  $('#btnClear').addEventListener('click', ()=>{ state.issues=false; state.q=''; $('#q').value=''; state.city=state.status=state.model=''; $('#city').value=''; $('#status').value=''; $('#model').value=''; renderTable(); });
-  $('#btnTheme').addEventListener('click', ()=>{ const dark = document.documentElement.dataset.theme==='dark'; if(dark) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme='dark'; renderHeat(); });
-  $('#btnExportAll').addEventListener('click', exportAll);
-  $('#btnExportIssues').addEventListener('click', exportIssues);
-  $('#btnBrief').addEventListener('click', briefModeToggle);
-  $('#btnRefresh').addEventListener('click', ()=>reloadData(false));
-  // Sorting
-  $$('th[data-sort]').forEach(th=> th.addEventListener('click', ()=>{ const key=th.dataset.sort; if(state.sortKey===key){state.sortDir*=-1}else{state.sortKey=key; state.sortDir=1} renderTable(); }));
-  // Shortcuts
-  document.addEventListener('keydown', e=>{ if(e.key==='/' && document.activeElement!==$('#q')){ e.preventDefault(); $('#q').focus(); }});
-  // Tabs
-  $$('.tab').forEach(b=> b.addEventListener('click', ()=> setTab(b.dataset.tab)));
-}
-
-/***** RELOAD PIPELINE *****/
-async function reloadData(isRetry){
-  $('#lastUpdated').textContent = (isRetry? 'Retrying… ' : '') + 'Loading from Google Sheets…';
-  const csv = await fetchSheet();
-  const rows = parseCSV(csv);
-  DATA = rowsToObjects(rows);
-  populateFilters();
-  updateKpis();
-  renderCityCards();
-  renderTable();
-  if(state.activeTab==='map' && typeof initMap==='function') initMap();
-  if(state.activeTab==='heat' && typeof renderHeat==='function') renderHeat();
-  if(state.activeTab==='brief' && typeof renderBrief==='function') renderBrief();
-  $('#lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()} • Showing ${applyFilters(DATA).length} rows`;
-}
-
-/***** INIT *****/
-(async function init(){
-  bindEvents();
-  setTab('table');
-  await reloadData(false);
-})();
+/* ===== UI WIRING ===== */
+document.getElementById('addBtn').onclick=()=>{
+  const name=document.getElementById('contractorSelect').value;
+  const qty=parseInt(document.getElementById('qtyInput').value,10);
+  if(!name){ alert('Select a contractor'); return; }
+  if(!Number.isFinite(qty) || qty<0){ alert('Enter a capacity (0 or more)'); return; }
+  state.routeSelections.set(name, qty);
+  renderRouteChips();
+  document.getElementById('contractorSelect').value='';
+  document.getElementById('qtyInput').value='';
+};
+document.getElementById('resetBtn').onclick=()=>{
+  state.routeSelections.clear(); renderRouteChips();
+  document.getElementById('citySelect').value='';
+  document.getElementById('daySelect').value='today';
+  ['optTable','sumTable','unTable','distChart','board'].forEach(id=> document.getElementById(id).innerHTML='');
+  ['kpiTasks','kpiAssigned','kpiUn','kpiHM'].forEach(id=> document.getElementById(id).textContent='—');
+  ['pillHour','pillCity','pillDay','pillCalls'].forEach(id=> document.getElementById(id).textContent='—');
+  setProgress(0); setStatus('Ready.');
+};
+document.getElementById('runBtn').onclick=()=>runOptimization();
+document.getElementById('pubhtmlUrl').addEventListener('change', ()=>bootstrap());
+window.addEventListener('load', ()=>bootstrap());
 </script>
 </body>
 </html>
