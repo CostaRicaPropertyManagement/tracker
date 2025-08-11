@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Venturebnb • StayFi Executive Tracker</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<style>
+  :root{
+    --brand:#0d3b66; --bg:#f7f9fc; --fg:#0f172a; --muted:#64748b; --card:#fff; --border:#e2e8f0;
+    --good:#16a34a; --bad:#dc2626; --warn:#d97706; --pill:#f1f5f9; --accent:#4338ca;
+  }
+  [data-theme="dark"]{
+    --brand:#4f46e5; --bg:#0b1020; --fg:#e5e7eb; --muted:#a3a3b2; --card:#111736; --border:#27306a;
+    --good:#22c55e; --bad:#f87171; --warn:#f59e0b; --pill:#0e1229; --accent:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  header{background:var(--brand);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:18px;display:flex;gap:10px;align-items:center}
+  .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button,select,input{border:1px solid var(--border);background:var(--pill);color:var(--fg);padding:8px 10px;border-radius:10px;font-size:14px}
+  .btn{cursor:pointer}
+  .btn-primary{background:linear-gradient(180deg,var(--accent),#2a2296);color:#fff;border:0}
+  .btn-ghost{background:transparent;border-color:rgba(255,255,255,.35);color:#fff}
+  .wrap{max-width:1280px;margin:0 auto;padding:16px}
+  .surface{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 28px rgba(0,0,0,.08)}
+  .banner{display:none;position:sticky;top:0;z-index:5;background:#fee2e2;color:#7f1d1d;border-bottom:1px solid #fca5a5;padding:10px 14px}
+  .kpis{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:14px}
+  .kpi{grid-column:span 3;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
+  .kpi h3{margin:0 0 4px 0;color:var(--muted);font-size:12px;font-weight:700}
+  .kpi .val{font-size:26px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .kpi .delta{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--pill);border:1px solid var(--border)}
+  .kpi.good .val{color:var(--good)} .kpi.bad .val{color:var(--bad)}
+  .controls{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto auto;gap:10px;padding:12px;border-top:1px solid var(--border)}
+  .tabs{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
+  .tab{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--pill);cursor:pointer}
+  .tab.active{background:var(--accent);color:#fff;border-color:transparent}
+  .table-wrap{overflow:auto;border-top:1px solid var(--border)}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1100px}
+  thead th{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:10px;text-align:left;cursor:pointer}
+  tbody td{padding:10px;border-bottom:1px solid var(--border)}
+  tbody tr:nth-child(odd){background:#fafbff}
+  [data-theme="dark"] tbody tr:nth-child(odd){background:#0f1430}
+  .status{display:inline-flex;gap:8px;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
+  .status.connected{background:rgba(22,163,74,.12);color:var(--good)}
+  .status.disconnected{background:rgba(220,38,38,.12);color:var(--bad)}
+  .pill{padding:.15rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border)}
+  .actions-col a{text-decoration:none}
+  .sticky-footer{display:flex;justify-content:space-between;align-items:center;padding:12px;border-top:1px solid var(--border);color:var(--muted)}
+  .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:12px;border-top:1px solid var(--border)}
+  .mini{grid-column:span 3;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px}
+  .bar{height:8px;background:var(--pill);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--good),#10b981)}
+  #map{height:420px;border-top:1px solid var(--border)}
+  #heat{height:300px;padding:12px}
+  canvas{max-width:100%}
+  .hidden{display:none!important}
+  @media(max-width:900px){.kpi{grid-column:span 6}.controls{grid-template-columns:1fr 1fr 1fr 1fr auto auto auto}.mini{grid-column:span 6}}
+  @media(max-width:640px){.kpi{grid-column:span 12}.controls{grid-template-columns:1fr 1fr}.mini{grid-column:span 12}}
+</style>
+</head>
+<body>
+  <header>
+    <h1><i class="fa-solid fa-wifi"></i> StayFi Executive Tracker</h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="btnTheme"><i class="fa-solid fa-circle-half-stroke"></i> Theme</button>
+      <button class="btn btn-ghost" id="btnBrief"><i class="fa-regular fa-file-lines"></i> Auto-Brief</button>
+      <button class="btn btn-ghost" id="btnRefresh"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+      <button class="btn btn-ghost" id="btnExportIssues"><i class="fa-solid fa-triangle-exclamation"></i> Export Issues</button>
+      <button class="btn btn-primary" id="btnExportAll"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+    </div>
+  </header>
+
+  <div id="errorBanner" class="banner"><i class="fa-solid fa-circle-exclamation"></i> <span id="errorText">Failed to load data. Showing last cached snapshot.</span></div>
+
+  <div class="wrap surface">
+    <!-- KPI Row -->
+    <section class="kpis" aria-label="Key metrics">
+      <div class="kpi"><h3>Total Devices</h3><div class="val" id="kpiTotal">0 <span class="delta" id="deltaTotal">—</span></div><small id="kpiCities" class="muted"></small></div>
+      <div class="kpi good"><h3>Connected</h3><div class="val" id="kpiUp">0 <span class="delta" id="deltaUp">—</span></div><small id="kpiUpPct" class="muted"></small></div>
+      <div class="kpi bad"><h3>Disconnected</h3><div class="val" id="kpiDown">0 <span class="delta" id="deltaDown">—</span></div><small id="kpiDownPct" class="muted"></small></div>
+      <div class="kpi"><h3>Avg Wireless Signal</h3><div class="val" id="kpiSignal">— <span class="delta" id="deltaSignal">—</span></div><small class="muted">Connected wireless only</small></div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls" aria-label="Filters">
+      <input id="q" placeholder="Search: property, city, MAC, model…" aria-label="Search" />
+      <select id="city" aria-label="City"><option value="">All cities</option></select>
+      <select id="status" aria-label="Status"><option value="">All statuses</option><option>Connected</option><option>Disconnected</option></select>
+      <select id="model" aria-label="Model"><option value="">All models</option></select>
+      <button class="btn" id="btnIssues"><i class="fa-solid fa-bug"></i> Issues</button>
+      <button class="btn" id="btnClear"><i class="fa-solid fa-eraser"></i> Clear</button>
+      <div class="muted" id="lastUpdated" style="align-self:center;text-align:right"></div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="table"><i class="fa-solid fa-table"></i> Table</button>
+      <button class="tab" data-tab="map"><i class="fa-solid fa-map"></i> Map</button>
+      <button class="tab" data-tab="heat"><i class="fa-solid fa-fire"></i> Signal Heatmap</button>
+      <button class="tab" data-tab="brief"><i class="fa-regular fa-file-lines"></i> Brief</button>
+    </nav>
+
+    <!-- TABLE VIEW -->
+    <section id="view-table" class="table-wrap" role="region" aria-label="Devices table">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th data-sort="City">City</th>
+            <th data-sort="Property">Property</th>
+            <th data-sort="Device Label">Device</th>
+            <th data-sort="Device ID">ID</th>
+            <th data-sort="MAC Address">MAC</th>
+            <th data-sort="Model">Model</th>
+            <th data-sort="Status">Status</th>
+            <th data-sort="Connection">Connection</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- MAP VIEW -->
+    <section id="view-map" class="hidden">
+      <div id="map" class="surface"></div>
+      <div class="sticky-footer"><span class="muted">Markers use property lat/long when available; otherwise city centroid.</span><span id="mapNote"></span></div>
+    </section>
+
+    <!-- HEATMAP VIEW (Histogram) -->
+    <section id="view-heat" class="hidden">
+      <div id="heat">
+        <canvas id="heatCanvas" height="240"></canvas>
+      </div>
+      <div class="sticky-footer"><span class="muted">Distribution of connected wireless signal strengths.</span></div>
+    </section>
+
+    <!-- BRIEF VIEW -->
+    <section id="view-brief" class="hidden" style="padding:12px">
+      <h3 style="margin-top:0">Top Issues</h3>
+      <ol id="issuesList" style="line-height:1.6"></ol>
+      <div class="sticky-footer"><span id="briefNote" class="muted"></span></div>
+    </section>
+
+    <div class="sticky-footer"><span class="muted">Tip: Press <strong>/</strong> to focus search • Click any MAC to copy</span></div>
+  </div>
+
+<script>
+/***** CONFIG *****/
+const CONFIG = {
+  STAYFI_BASE: "", // e.g. "https://portal.stayfi.com/access-points/" -> append Device ID if no StayFi URL column
+  CSV_URL: 'https://docs.google.com/spreadsheets/d/1RkUCHBx79DPhax0oUP0CofotqtEXq809wpYmqNUuIX8/export?format=csv&gid=2019561525',
+  CITY_COORDS: {
+    "Belgrade, MT": [45.777, -111.176],
+    "Louisville, KY": [38.2527, -85.7585],
+    "Nashville, TN": [36.1627, -86.7816],
+    "Sun Valley, ID": [43.6970, -114.351],
+    "Truckee, CA": [39.3279, -120.183]
+  }
+};
+
+/***** UTILITIES *****/
+const $  = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
+const copy = (t)=>navigator.clipboard.writeText(String(t||''));
+
+function showError(msg){ const b=$('#errorBanner'); if(!b) return; $('#errorText').textContent=msg; b.style.display='block'; }
+function hideError(){ const b=$('#errorBanner'); if(b) b.style.display='none'; }
+
+function parseCSV(text){
+  text = String(text||'').replace(/\r?\n/g,'\n');
+  const rows=[]; let cur='', inQ=false, row=[];
+  for(let i=0;i<text.length;i++){
+    const ch=text[i], next=text[i+1];
+    if(ch==='"'){ if(inQ && next==='"'){ cur+='"'; i++; } else { inQ=!inQ; } }
+    else if(ch===',' && !inQ){ row.push(cur); cur=''; }
+    else if(ch==='\n' && !inQ){ row.push(cur); rows.push(row); row=[]; cur=''; }
+    else cur+=ch;
+  }
+  if(cur.length || row.length){ row.push(cur); rows.push(row); }
+  return rows.map(r=> r.map(c=> String(c??'').trim()));
+}
+
+function parseSignal(conn, explicit){
+  if(explicit!=null && !Number.isNaN(explicit)) return explicit;
+  const m = /Wireless\s*[•\u2022]\s*(\d+)%/i.exec(conn||"");
+  return m? Number(m[1]) : null;
+}
+
+function sortBy(list,key,dir){
+  return [...list].sort((a,b)=>{
+    const va=a[key]??''; const vb=b[key]??'';
+    const na=parseFloat(String(va).replace(/[^0-9.\-]/g,'')); const nb=parseFloat(String(vb).replace(/[^0-9.\-]/g,''));
+    const num=!Number.isNaN(na)&&!Number.isNaN(nb) && (/^\d/.test(String(va))||/^\d/.test(String(vb)));
+    return num? (na-nb)*dir : String(va).localeCompare(String(vb),undefined,{numeric:true,sensitivity:'base'})*dir;
+  });
+}
+
+function groupBy(arr,key){ return arr.reduce((m,o)=>((m[o[key]]??=[]).push(o),m),{}); }
+function fmtDelta(n){ if(n===null||Number.isNaN(n)) return '—'; const s = n>0? '+'+n : n; const color = n>0? 'var(--good)' : (n<0? 'var(--bad)':'var(--muted)'); return `<span class="delta" style="color:${color}">${s}</span>`; }
+
+/***** STATE *****/
+let DATA = [];
+const state = {q:'',city:'',status:'',model:'',issues:false,sortKey:null,sortDir:1,activeTab:'table'};
+
+/***** FETCH + CACHE (resilient) *****/
+async function fetchSheet(){
+  try{
+    const url = CONFIG.CSV_URL + '&_ts=' + Date.now(); // cache-bust
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok){
+      const peek = await res.text().catch(()=> '');
+      console.error('Fetch failed', res.status, res.statusText, peek.slice(0,400));
+      throw new Error('HTTP '+res.status);
+    }
+    const csv = await res.text();
+    localStorage.setItem('stayfi_cache_csv_v1', csv);
+    localStorage.setItem('stayfi_cache_time_v1', String(Date.now()));
+    hideError();
+    return csv;
+  }catch(e){
+    console.error('Fetch error', e);
+    const cached = localStorage.getItem('stayfi_cache_csv_v1');
+    if(cached){
+      const when = new Date(Number(localStorage.getItem('stayfi_cache_time_v1')||Date.now()));
+      showError(`Live data unavailable; showing last cached snapshot from ${when.toLocaleString()}. Retrying in 60s…`);
+      setTimeout(()=>reloadData(true), 60000);
+      return cached;
+    }
+    showError('Could not load Google Sheet. Check CSV URL & gid. Retrying in 60s…');
+    setTimeout(()=>reloadData(true), 60000);
+    return "";
+  }
+}
+
+function rowsToObjects(rows){
+  if(!rows.length) return [];
+  const header = rows[0];
+  const idx = Object.fromEntries(header.map((h,i)=>[String(h).toLowerCase(), i]));
+  const gi = (h)=> idx[String(h).toLowerCase()] ?? -1;
+  const get = (r,h)=>{ const i = gi(h); return i>=0? r[i] : ''; }
+
+  return rows.slice(1).filter(r=>r.some(c=>c && String(c).trim()!=='')).map(r=>({
+    City: get(r,'City'),
+    Property: get(r,'Property'),
+    'Device Label': get(r,'Device Label'),
+    'Device ID': get(r,'Device ID'),
+    'MAC Address': get(r,'MAC Address'),
+    Model: get(r,'Model'),
+    Status: get(r,'Status'),
+    Connection: get(r,'Connection'),
+    Location: get(r,'Location'),
+    Latitude: Number(get(r,'Latitude'))||null,
+    Longitude: Number(get(r,'Longitude'))||null,
+    'Connection Type': get(r,'Connection Type')||'',
+    'Signal %': (Number(get(r,'Signal %'))||null),
+    'StayFi URL': get(r,'StayFi URL')||''
+  }));
+}
+
+/***** FILTERS *****/
+function applyFilters(rows){
+  const q = state.q.toLowerCase();
+  let out = rows.filter(r=>{
+    const matchesQ = !q || Object.values(r).some(v=>String(v).toLowerCase().includes(q));
+    const matchesCity = !state.city || r.City===state.city;
+    const matchesStatus = !state.status || r.Status===state.status;
+    const matchesModel = !state.model || r.Model===state.model;
+    return matchesQ && matchesCity && matchesStatus && matchesModel;
+  });
+  if(state.issues){ out = out.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35); }
+  if(state.sortKey){ out = sortBy(out, state.sortKey, state.sortDir); }
+  return out;
+}
+
+/***** KPIs & TRENDS *****/
+function metrics(rows){
+  const total = rows.length;
+  const up = rows.filter(r=>r.Status==='Connected').length;
+  const down = rows.filter(r=>r.Status==='Disconnected').length;
+  const cities = Object.keys(groupBy(rows,'City')).length;
+  const sigs = rows.map(r=>parseSignal(r.Connection, r['Signal %'])).filter(x=>x!==null);
+  const avgSig = sigs.length? Math.round(sigs.reduce((a,b)=>a+b,0)/sigs.length) : null;
+  const upPct = total? Math.round(up*100/total):0;
+  const downPct = total? Math.round(down*100/total):0;
+  return {total,up,down,cities,avgSig,upPct,downPct};
+}
+function updateKpis(){
+  const m = metrics(DATA);
+  const prev = JSON.parse(localStorage.getItem('stayfi_snapshot')||'null');
+  $('#kpiTotal').innerHTML = `${m.total} ${fmtDelta(prev? m.total-prev.total : null)}`;
+  $('#kpiCities').textContent = `${m.cities} cities`;
+  $('#kpiUp').innerHTML = `${m.up} ${fmtDelta(prev? m.up-prev.up : null)}`;
+  $('#kpiUpPct').textContent = `${m.upPct}% of fleet connected`;
+  $('#kpiDown').innerHTML = `${m.down} ${fmtDelta(prev? m.down-prev.down : null)}`;
+  $('#kpiDownPct').textContent = `${m.downPct}% of fleet disconnected`;
+  $('#kpiSignal').innerHTML = `${m.avgSig==null? '—' : m.avgSig+'%'} ${fmtDelta(prev && prev.avgSig!=null ? (m.avgSig-prev.avgSig) : null)}`;
+  localStorage.setItem('stayfi_snapshot', JSON.stringify(m));
+}
+
+/***** TABLE *****/
+function openStayFi(row){
+  const url = row['StayFi URL'] || (CONFIG.STAYFI_BASE? CONFIG.STAYFI_BASE + encodeURIComponent(row['Device ID']) : '');
+  if(!url){ alert('Set CONFIG.STAYFI_BASE or add a "StayFi URL" column.'); return; }
+  window.open(url,'_blank','noopener');
+}
+
+function renderTable(){
+  const rows = applyFilters(DATA);
+  const tb = $('#tbody');
+  tb.innerHTML = rows.map(r=>{
+    const sig = parseSignal(r.Connection, r['Signal %']);
+    const issue = (r.Status==='Disconnected') || ((sig??100) < 35);
+    return `<tr${issue? ' style="outline:2px solid rgba(220,38,38,.18)"':''}>
+      <td>${r.City||''}</td>
+      <td>${r.Property||''}</td>
+      <td>${r['Device Label']||''}</td>
+      <td><span class="pill">${r['Device ID']||''}</span></td>
+      <td><code class="mac" title="Click to copy">${r['MAC Address']||''}</code></td>
+      <td>${r.Model||''}</td>
+      <td><span class="status ${r.Status==='Connected'?'connected':'disconnected'}">${r.Status||''}</span></td>
+      <td>${r.Connection||''}</td>
+      <td class="actions-col"><a href="#" class="open-link">Open</a></td>
+    </tr>`;
+  }).join('');
+
+  // Wire actions and copy-to-clipboard
+  $$('#tbody tr').forEach((tr,idx)=>{
+    const row = rows[idx];
+    tr.querySelector('.actions-col a.open-link').addEventListener('click', (e)=>{ e.preventDefault(); openStayFi(row); });
+    const mac = tr.querySelector('.mac');
+    mac.addEventListener('click', ()=>{ copy(mac.textContent); mac.title='Copied!'; setTimeout(()=>mac.title='Click to copy',900); });
+  });
+
+  $('#lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()} • Showing ${rows.length} rows`;
+}
+
+/***** CITY CARDS *****/
+function renderCityCards(){
+  const groups = groupBy(DATA,'City');
+  const html = Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([city,items])=>{
+    const up = items.filter(x=>x.Status==='Connected').length; const pct = Math.round(up*100/items.length);
+    return `<div class="mini"><strong>${city}</strong><div class="bar" aria-label="${pct}% connected"><i style="width:${pct}%"></i></div><div class="muted" style="margin-top:6px">${up}/${items.length} connected • ${pct}%</div></div>`;
+  }).join('');
+  document.querySelector('.cards')?.remove();
+  const sec = document.createElement('section'); sec.className='cards'; sec.innerHTML = html; document.querySelector('.wrap').insertBefore(sec, document.querySelector('#view-map'));
+}
+
+/***** MAP *****/
+let map;
+function initMap(){
+  if(map) return;
+  map = L.map('map');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution:'© OpenStreetMap'}).addTo(map);
+  const markers = [];
+
+  const groups = groupBy(DATA,'City');
+  Object.entries(groups).forEach(([city,items])=>{
+    const withCoords = items.filter(r=> Number.isFinite(r.Latitude) && Number.isFinite(r.Longitude));
+    if(withCoords.length){
+      withCoords.forEach(r=>{
+        const ok = r.Status==='Connected';
+        const m = L.circleMarker([r.Latitude,r.Longitude], {radius:8, color: ok?'green':'red', fillOpacity:.6}).addTo(map);
+        m.bindPopup(`<strong>${r.Property||city}</strong><br>${r.Status}${r['Signal %']!=null? ' • '+r['Signal %']+'%':''}`);
+        markers.push(m);
+      });
+    }else{
+      const coord = CONFIG.CITY_COORDS[city];
+      if(!coord) return;
+      const up = items.filter(x=>x.Status==='Connected').length;
+      const color = (up===items.length)? 'green':'red';
+      const m = L.circleMarker(coord, {radius:10, color, fillOpacity:.6}).addTo(map);
+      m.bindPopup(`<strong>${city}</strong><br>${up}/${items.length} connected`);
+      markers.push(m);
+    }
+  });
+  const group = L.featureGroup(markers);
+  if(markers.length) map.fitBounds(group.getBounds().pad(0.2));
+  $('#mapNote').textContent = 'Green=connected, Red=disconnected. Add Latitude/Longitude columns for precise pins.';
+}
+
+/***** HEATMAP (Histogram) *****/
+function renderHeat(){
+  const canvas = $('#heatCanvas'); const ctx = canvas.getContext('2d');
+  const sigs = DATA.map(r=>parseSignal(r.Connection, r['Signal %'])).filter(v=>v!==null);
+  const bins = [0,10,20,30,40,50,60,70,80,90,100];
+  const counts = new Array(bins.length-1).fill(0);
+  sigs.forEach(s=>{ for(let i=0;i<bins.length-1;i++){ if(s>=bins[i] && s<bins[i+1]){ counts[i]++; break; } } });
+  const w = canvas.width = canvas.clientWidth; const h = canvas.height; const pad=40; const bw = (w-2*pad)/counts.length;
+  ctx.clearRect(0,0,w,h);
+  // axes
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
+  ctx.beginPath(); ctx.moveTo(pad,10); ctx.lineTo(pad,h-30); ctx.lineTo(w-pad,h-30); ctx.stroke();
+  // bars
+  const max = Math.max(1, ...counts);
+  counts.forEach((c,i)=>{
+    const x = pad + i*bw + 6; const bh = ((h-60)*c)/max; const y = (h-30) - bh;
+    const low = (i*10)<35;
+    ctx.fillStyle = low ? 'rgba(239,68,68,0.85)' : 'rgba(34,197,94,0.8)';
+    ctx.fillRect(x,y,bw-12,bh);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
+    ctx.font = '12px system-ui'; ctx.textAlign='center';
+    ctx.fillText(`${bins[i]}-${bins[i+1]}`, x+(bw-12)/2, h-12);
+  });
+}
+
+/***** BRIEF *****/
+function renderBrief(){
+  const issues = DATA.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35);
+  issues.sort((a,b)=>{
+    const sa = parseSignal(a.Connection, a['Signal %'])??0; const sb = parseSignal(b.Connection, b['Signal %'])??0;
+    const da = a.Status==='Disconnected'? -1:0; const db = b.Status==='Disconnected'? -1:0;
+    return (db-da) || (sa - sb);
+  });
+  const top = issues.slice(0,15);
+  $('#issuesList').innerHTML = top.map(r=> `<li><strong>${r.City}</strong> — ${r.Property} • ${r.Model} • <code>${r["MAC Address"]}</code> • <em>${r.Status}</em> • ${r.Connection}</li>`).join('');
+  $('#briefNote').textContent = `${issues.length} devices require attention • Top ${top.length} listed`;
+}
+
+/***** EXPORTS *****/
+function toCSV(rows){
+  const cols = ["City","Property","Device Label","Device ID","MAC Address","Model","Status","Connection","Latitude","Longitude","Signal %","StayFi URL"];
+  const esc = v=>`"${String(v??'').replaceAll('"','""')}"`;
+  return [cols.join(','), ...rows.map(r=> cols.map(k=>esc(r[k])).join(','))].join('\n');
+}
+function exportAll(){
+  const rows = applyFilters(DATA);
+  const blob = new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='stayfi_all.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+function exportIssues(){
+  const rows = DATA.filter(r=> r.Status==='Disconnected' || (parseSignal(r.Connection, r['Signal %'])??100) < 35);
+  const blob = new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='stayfi_issues.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/***** UI WIRING *****/
+function populateFilters(){
+  const cities = [...new Set(DATA.map(r=>r.City))].filter(Boolean).sort();
+  const models = [...new Set(DATA.map(r=>r.Model))].filter(Boolean).sort();
+  $('#city').innerHTML = '<option value="">All cities</option>' + cities.map(c=>`<option>${c}</option>`).join('');
+  $('#model').innerHTML = '<option value="">All models</option>' + models.map(m=>`<option>${m}</option>`).join('');
+}
+
+function setTab(tab){
+  state.activeTab = tab;
+  $('#view-table').classList.toggle('hidden', tab!=='table');
+  $('#view-map').classList.toggle('hidden', tab!=='map');
+  $('#view-heat').classList.toggle('hidden', tab!=='heat');
+  $('#view-brief').classList.toggle('hidden', tab!=='brief');
+  $$('.tab').forEach(t=> t.classList.toggle('active', t.dataset.tab===tab));
+  if(tab==='map') initMap();
+  if(tab==='heat') renderHeat();
+  if(tab==='brief') renderBrief();
+}
+
+function briefModeToggle(){
+  const on = document.body.dataset.brief==='1';
+  if(on){ delete document.body.dataset.brief; $('.controls').classList.remove('hidden'); setTab('table'); }
+  else { document.body.dataset.brief='1'; $('.controls').classList.add('hidden'); setTab('brief'); }
+}
+
+function bindEvents(){
+  $('#q').addEventListener('input', e=>{ state.q=e.target.value.trim(); renderTable(); });
+  $('#city').addEventListener('change', e=>{ state.city=e.target.value; renderTable(); });
+  $('#status').addEventListener('change', e=>{ state.status=e.target.value; renderTable(); });
+  $('#model').addEventListener('change', e=>{ state.model=e.target.value; renderTable(); });
+  $('#btnIssues').addEventListener('click', ()=>{ state.issues=true; renderTable(); setTab('brief'); renderBrief(); });
+  $('#btnClear').addEventListener('click', ()=>{ state.issues=false; state.q=''; $('#q').value=''; state.city=state.status=state.model=''; $('#city').value=''; $('#status').value=''; $('#model').value=''; renderTable(); });
+  $('#btnTheme').addEventListener('click', ()=>{ const dark = document.documentElement.dataset.theme==='dark'; if(dark) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme='dark'; renderHeat(); });
+  $('#btnExportAll').addEventListener('click', exportAll);
+  $('#btnExportIssues').addEventListener('click', exportIssues);
+  $('#btnBrief').addEventListener('click', briefModeToggle);
+  $('#btnRefresh').addEventListener('click', ()=>reloadData(false));
+  // Sorting
+  $$('th[data-sort]').forEach(th=> th.addEventListener('click', ()=>{ const key=th.dataset.sort; if(state.sortKey===key){state.sortDir*=-1}else{state.sortKey=key; state.sortDir=1} renderTable(); }));
+  // Shortcuts
+  document.addEventListener('keydown', e=>{ if(e.key==='/' && document.activeElement!==$('#q')){ e.preventDefault(); $('#q').focus(); }});
+  // Tabs
+  $$('.tab').forEach(b=> b.addEventListener('click', ()=> setTab(b.dataset.tab)));
+}
+
+/***** RELOAD PIPELINE *****/
+async function reloadData(isRetry){
+  $('#lastUpdated').textContent = (isRetry? 'Retrying… ' : '') + 'Loading from Google Sheets…';
+  const csv = await fetchSheet();
+  const rows = parseCSV(csv);
+  DATA = rowsToObjects(rows);
+  populateFilters();
+  updateKpis();
+  renderCityCards();
+  renderTable();
+  if(state.activeTab==='map' && typeof initMap==='function') initMap();
+  if(state.activeTab==='heat' && typeof renderHeat==='function') renderHeat();
+  if(state.activeTab==='brief' && typeof renderBrief==='function') renderBrief();
+  $('#lastUpdated').textContent = `Last updated: ${new Date().toLocaleString()} • Showing ${applyFilters(DATA).length} rows`;
+}
+
+/***** INIT *****/
+(async function init(){
+  bindEvents();
+  setTab('table');
+  await reloadData(false);
+})();
+</script>
+</body>
+</html>
